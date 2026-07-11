@@ -1,6 +1,7 @@
 package me.xjanua.spring.backend.mapper;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
@@ -18,10 +19,9 @@ public class ClientAppMapper {
             return null;
         }
 
-        List<String> scopes = clientApp.getScopes() != null
+        List<UUID> scopeIds = clientApp.getScopes() != null
                 ? clientApp.getScopes().stream()
-                        .map(ClientAppScope::getScope)
-                        .map(scope -> scope.getCode())
+                        .map(cs -> cs.getScope().getId())
                         .collect(Collectors.toList())
                 : List.of();
 
@@ -38,7 +38,7 @@ public class ClientAppMapper {
                 .description(clientApp.getDescription())
                 .logoUrl(clientApp.getLogoUrl())
                 .status(clientApp.getStatus().name())
-                .scopes(scopes)
+                .scopeIds(scopeIds)
                 .redirectUris(redirectUris)
                 .createdAt(clientApp.getCreatedAt())
                 .updatedAt(clientApp.getUpdatedAt())

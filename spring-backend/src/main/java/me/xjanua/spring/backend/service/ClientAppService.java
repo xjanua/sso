@@ -87,8 +87,8 @@ public class ClientAppService {
 
         clientApp = save(clientApp);
 
-        if (request.getScopes() != null && !request.getScopes().isEmpty()) {
-            addScopesToClientApp(clientApp, request.getScopes());
+        if (request.getScopeIds() != null && !request.getScopeIds().isEmpty()) {
+            addScopesToClientApp(clientApp, request.getScopeIds());
         }
 
         if (request.getRedirectUris() != null && !request.getRedirectUris().isEmpty()) {
@@ -121,10 +121,10 @@ public class ClientAppService {
             clientApp.setStatus(ClientAppStatus.valueOf(request.getStatus().toUpperCase()));
         }
 
-        clientApp = save(clientApp);
+        save(clientApp);
 
-        if (request.getScopes() != null) {
-            updateScopes(clientApp, request.getScopes());
+        if (request.getScopeIds() != null) {
+            updateScopes(clientApp, request.getScopeIds());
         }
 
         if (request.getRedirectUris() != null) {
@@ -150,25 +150,23 @@ public class ClientAppService {
     }
 
     @Transactional
-    public ClientApp addScopes(UUID id, List<String> scopeCodes) {
+    public ClientApp addScopes(UUID id, List<UUID> scopeIds) {
         ClientApp clientApp = findById(id);
-        addScopesToClientApp(clientApp, scopeCodes);
-        return findById(id);
+        addScopesToClientApp(clientApp, scopeIds);
+        return clientApp;
     }
 
     @Transactional
-    public ClientApp removeScope(UUID id, String scopeCode) {
+    public ClientApp removeScope(UUID id, UUID scopeId) {
         ClientApp clientApp = findById(id);
-        Scope scope = scopeRepository.findByCode(scopeCode)
-                .orElseThrow(() -> new NotFoundException("Scope not found: " + scopeCode));
 
         List<ClientAppScope> scopes = clientAppScopeRepository.findByClientAppId(id);
         scopes.stream()
-                .filter(cs -> cs.getScope().getId().equals(scope.getId()))
+                .filter(cs -> cs.getScope().getId().equals(scopeId))
                 .findFirst()
                 .ifPresent(clientAppScopeRepository::delete);
 
-        return findById(id);
+        return clientApp;
     }
 
     @Transactional
@@ -191,10 +189,10 @@ public class ClientAppService {
         return findById(id);
     }
 
-    private void addScopesToClientApp(ClientApp clientApp, List<String> scopeCodes) {
-        List<Scope> scopes = scopeRepository.findByCodeIn(scopeCodes);
-        if (scopes.size() != scopeCodes.size()) {
-            throw new BadRequestException("Some scope codes are invalid");
+    private void addScopesToClientApp(ClientApp clientApp, List<UUID> scopeIds) {
+        List<Scope> scopes = scopeRepository.findAllById(scopeIds);
+        if (scopes.size() != scopeIds.size()) {
+            throw new BadRequestException("Some scope IDs are invalid");
         }
 
         for (Scope scope : scopes) {
@@ -224,10 +222,10 @@ public class ClientAppService {
         }
     }
 
-    private void updateScopes(ClientApp clientApp, List<String> scopeCodes) {
+    private void updateScopes(ClientApp clientApp, List<UUID> scopeIds) {
         clientAppScopeRepository.deleteByClientAppId(clientApp.getId());
-        if (scopeCodes != null && !scopeCodes.isEmpty()) {
-            addScopesToClientApp(clientApp, scopeCodes);
+        if (scopeIds != null && !scopeIds.isEmpty()) {
+            addScopesToClientApp(clientApp, scopeIds);
         }
     }
 

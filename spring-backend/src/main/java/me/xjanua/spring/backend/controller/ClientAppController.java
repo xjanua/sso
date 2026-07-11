@@ -92,16 +92,16 @@ public class ClientAppController {
 
     @PreAuthorize("hasAuthority('CLIENT_APP_UPDATE')")
     @PostMapping("/{id}/scopes")
-    public ResponseEntity<ClientAppResponse> addScopes(@PathVariable UUID id, @RequestBody List<String> scopes) {
-        ClientApp updated = clientAppService.addScopes(id, scopes);
+    public ResponseEntity<ClientAppResponse> addScopes(@PathVariable UUID id, @RequestBody List<UUID> scopeIds) {
+        ClientApp updated = clientAppService.addScopes(id, scopeIds);
         ClientAppResponse response = clientAppMapper.toResponse(updated);
         return ResponseEntity.ok(response);
     }
 
     @PreAuthorize("hasAuthority('CLIENT_APP_UPDATE')")
-    @DeleteMapping("/{id}/scopes/{scopeCode}")
-    public ResponseEntity<ClientAppResponse> removeScope(@PathVariable UUID id, @PathVariable String scopeCode) {
-        ClientApp updated = clientAppService.removeScope(id, scopeCode);
+    @DeleteMapping("/{id}/scopes/{scopeId}")
+    public ResponseEntity<ClientAppResponse> removeScope(@PathVariable UUID id, @PathVariable UUID scopeId) {
+        ClientApp updated = clientAppService.removeScope(id, scopeId);
         ClientAppResponse response = clientAppMapper.toResponse(updated);
         return ResponseEntity.ok(response);
     }

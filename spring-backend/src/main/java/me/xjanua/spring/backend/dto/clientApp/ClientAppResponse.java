@@ -19,7 +19,7 @@ public class ClientAppResponse {
     private String description;
     private String logoUrl;
     private String status;
-    private List<String> scopes;
+    private List<UUID> scopeIds;
     private List<String> redirectUris;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -12,6 +12,6 @@ public class ClientAppRequest {
     private String name;
     private String description;
     private String logoUrl;
-    private List<String> scopes;
+    private List<UUID> scopeIds;
     private List<String> redirectUris;
 }
