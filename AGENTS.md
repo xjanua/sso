@@ -1,3 +1,38 @@
+# Git Workflow
+
+## Branch Strategy (Dự án cá nhân / nhỏ)
+
+```
+main       -> code ổn định, production-ready
+feature/*  -> phát triển tính năng mới
+fix/*      -> sửa bug
+```
+
+### Quy tắc
+- Mỗi tính năng/bug tạo branch riêng: `git checkout -b feature/tên-tính-năng`
+- Làm xong merge về `main`: tạo PR hoặc `git merge` trực tiếp
+- Commit message rõ ràng, mô tả what & why
+- **Không push thẳng vào main** (trừ khi cần thiết)
+
+### Ví dụ
+```bash
+# Tạo branch mới
+git checkout -b feature/scope-crud
+
+# Làm việc, commit
+git add .
+git commit -m "feat: add Scope CRUD API and ScopeResolver"
+
+# Push lên
+git push -u origin feature/scope-crud
+
+# Merge về main
+git checkout main
+git merge feature/scope-crud
+```
+
+---
+
 # SSO System Specification
 
 ## Overview
