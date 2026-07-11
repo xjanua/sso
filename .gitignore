@@ -1,0 +1,30 @@
+# Gradle
+spring-backend/.gradle
+spring-backend/build/
+spring-backend/bin/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.iws
+*.ipr
+out/
+
+# Env files (secrets)
+.env
+*.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Cursor
+.cursor/
+
+# Maven (nếu dùng sau này)
+target/
