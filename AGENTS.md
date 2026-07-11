@@ -7,6 +7,8 @@ main       -> code ổn định, production-ready
 feature/*  -> phát triển tính năng mới
 fix/*      -> sửa bug
 ```
+### Quy tắc
+- Mình(Ở đây là bạn không phải người dùng) phải để xuất commit và push code, khi người dùng đồng ý thì mới thực hiện, không tự thực hiện khi chưa được phép
 
 ### Quy tắc
 - Mỗi tính năng/bug tạo branch riêng: `git checkout -b feature/tên-tính-năng`

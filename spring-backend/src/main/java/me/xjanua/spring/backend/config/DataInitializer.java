@@ -47,7 +47,9 @@ public class DataInitializer {
             "ROLE_READ", "ROLE_CREATE", "ROLE_UPDATE", "ROLE_DELETE",
             "PERMISSION_READ", "PERMISSION_CREATE", "PERMISSION_UPDATE", "PERMISSION_DELETE",
             "ROLE_PERMISSION_READ", "ROLE_PERMISSION_CREATE", "ROLE_PERMISSION_UPDATE",
-            "ROLE_PERMISSION_DELETE");
+            "ROLE_PERMISSION_DELETE",
+            "CLIENT_APP_READ", "CLIENT_APP_CREATE", "CLIENT_APP_UPDATE", "CLIENT_APP_DELETE",
+            "SCOPE_READ", "SCOPE_CREATE", "SCOPE_UPDATE", "SCOPE_DELETE");
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
