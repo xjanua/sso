@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 import me.xjanua.spring.backend.dto.clientApp.ClientAppResponse;
 import me.xjanua.spring.backend.model.ClientApp;
 import me.xjanua.spring.backend.model.ClientAppRedirectUri;
-import me.xjanua.spring.backend.model.ClientAppScope;
 
 @Component
 public class ClientAppMapper {

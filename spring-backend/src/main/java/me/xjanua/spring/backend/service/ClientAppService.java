@@ -1,6 +1,5 @@
 package me.xjanua.spring.backend.service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -21,13 +20,7 @@ import me.xjanua.spring.backend.exception.BadRequestException;
 import me.xjanua.spring.backend.exception.NotFoundException;
 import me.xjanua.spring.backend.mapper.ClientAppMapper;
 import me.xjanua.spring.backend.model.ClientApp;
-import me.xjanua.spring.backend.model.ClientAppRedirectUri;
-import me.xjanua.spring.backend.model.ClientAppScope;
-import me.xjanua.spring.backend.model.Scope;
-import me.xjanua.spring.backend.repository.ClientAppRedirectUriRepository;
 import me.xjanua.spring.backend.repository.ClientAppRepository;
-import me.xjanua.spring.backend.repository.ClientAppScopeRepository;
-import me.xjanua.spring.backend.repository.ScopeRepository;
 import me.xjanua.spring.backend.util.PaginationUtil;
 
 @Service
@@ -35,9 +28,8 @@ import me.xjanua.spring.backend.util.PaginationUtil;
 public class ClientAppService {
 
     private final ClientAppRepository clientAppRepository;
-    private final ClientAppScopeRepository clientAppScopeRepository;
-    private final ClientAppRedirectUriRepository clientAppRedirectUriRepository;
-    private final ScopeRepository scopeRepository;
+    private final ClientAppScopeService clientAppScopeService;
+    private final ClientAppRedirectUriService clientAppRedirectUriService;
     private final ClientAppMapper clientAppMapper;
 
     public ClientApp findById(UUID id) {
@@ -88,11 +80,11 @@ public class ClientAppService {
         clientApp = save(clientApp);
 
         if (request.getScopeIds() != null && !request.getScopeIds().isEmpty()) {
-            addScopesToClientApp(clientApp, request.getScopeIds());
+            clientAppScopeService.replaceScopes(clientApp, request.getScopeIds());
         }
 
         if (request.getRedirectUris() != null && !request.getRedirectUris().isEmpty()) {
-            addRedirectUrisToClientApp(clientApp, request.getRedirectUris());
+            clientAppRedirectUriService.replaceRedirectUris(clientApp, request.getRedirectUris());
         }
 
         return findById(clientApp.getId());
@@ -124,11 +116,11 @@ public class ClientAppService {
         save(clientApp);
 
         if (request.getScopeIds() != null) {
-            updateScopes(clientApp, request.getScopeIds());
+            clientAppScopeService.replaceScopes(clientApp, request.getScopeIds());
         }
 
         if (request.getRedirectUris() != null) {
-            updateRedirectUris(clientApp, request.getRedirectUris());
+            clientAppRedirectUriService.replaceRedirectUris(clientApp, request.getRedirectUris());
         }
 
         return findById(clientApp.getId());
@@ -137,8 +129,8 @@ public class ClientAppService {
     @Transactional
     public void delete(UUID id) {
         ClientApp clientApp = findById(id);
-        clientAppScopeRepository.deleteByClientAppId(id);
-        clientAppRedirectUriRepository.deleteByClientAppId(id);
+        clientAppScopeService.deleteByClientAppId(id);
+        clientAppRedirectUriService.deleteByClientAppId(id);
         clientAppRepository.delete(clientApp);
     }
 
@@ -152,88 +144,31 @@ public class ClientAppService {
     @Transactional
     public ClientApp addScopes(UUID id, List<UUID> scopeIds) {
         ClientApp clientApp = findById(id);
-        addScopesToClientApp(clientApp, scopeIds);
+        for (UUID scopeId : scopeIds) {
+            clientAppScopeService.addScope(clientApp, scopeId);
+        }
         return clientApp;
     }
 
     @Transactional
     public ClientApp removeScope(UUID id, UUID scopeId) {
         ClientApp clientApp = findById(id);
-
-        List<ClientAppScope> scopes = clientAppScopeRepository.findByClientAppId(id);
-        scopes.stream()
-                .filter(cs -> cs.getScope().getId().equals(scopeId))
-                .findFirst()
-                .ifPresent(clientAppScopeRepository::delete);
-
+        clientAppScopeService.removeScope(clientApp, scopeId);
         return clientApp;
     }
 
     @Transactional
     public ClientApp addRedirectUri(UUID id, String redirectUri) {
         ClientApp clientApp = findById(id);
-        addRedirectUriToClientApp(clientApp, redirectUri);
-        return findById(id);
+        clientAppRedirectUriService.addRedirectUri(clientApp, redirectUri);
+        return clientApp;
     }
 
     @Transactional
     public ClientApp removeRedirectUri(UUID id, String redirectUri) {
         ClientApp clientApp = findById(id);
-
-        List<ClientAppRedirectUri> uris = clientAppRedirectUriRepository.findByClientAppId(id);
-        uris.stream()
-                .filter(uri -> uri.getRedirectUri().equals(redirectUri))
-                .findFirst()
-                .ifPresent(clientAppRedirectUriRepository::delete);
-
-        return findById(id);
-    }
-
-    private void addScopesToClientApp(ClientApp clientApp, List<UUID> scopeIds) {
-        List<Scope> scopes = scopeRepository.findAllById(scopeIds);
-        if (scopes.size() != scopeIds.size()) {
-            throw new BadRequestException("Some scope IDs are invalid");
-        }
-
-        for (Scope scope : scopes) {
-            if (!clientAppScopeRepository.existsByClientAppIdAndScopeId(clientApp.getId(), scope.getId())) {
-                ClientAppScope clientAppScope = ClientAppScope.builder()
-                        .clientApp(clientApp)
-                        .scope(scope)
-                        .build();
-                clientAppScopeRepository.save(clientAppScope);
-            }
-        }
-    }
-
-    private void addRedirectUrisToClientApp(ClientApp clientApp, List<String> redirectUris) {
-        for (String uri : redirectUris) {
-            addRedirectUriToClientApp(clientApp, uri);
-        }
-    }
-
-    private void addRedirectUriToClientApp(ClientApp clientApp, String redirectUri) {
-        if (!clientAppRedirectUriRepository.existsByClientAppIdAndRedirectUri(clientApp.getId(), redirectUri)) {
-            ClientAppRedirectUri appRedirectUri = ClientAppRedirectUri.builder()
-                    .clientApp(clientApp)
-                    .redirectUri(redirectUri)
-                    .build();
-            clientAppRedirectUriRepository.save(appRedirectUri);
-        }
-    }
-
-    private void updateScopes(ClientApp clientApp, List<UUID> scopeIds) {
-        clientAppScopeRepository.deleteByClientAppId(clientApp.getId());
-        if (scopeIds != null && !scopeIds.isEmpty()) {
-            addScopesToClientApp(clientApp, scopeIds);
-        }
-    }
-
-    private void updateRedirectUris(ClientApp clientApp, List<String> redirectUris) {
-        clientAppRedirectUriRepository.deleteByClientAppId(clientApp.getId());
-        if (redirectUris != null && !redirectUris.isEmpty()) {
-            addRedirectUrisToClientApp(clientApp, redirectUris);
-        }
+        clientAppRedirectUriService.removeRedirectUri(clientApp, redirectUri);
+        return clientApp;
     }
 
     private String generateClientId() {

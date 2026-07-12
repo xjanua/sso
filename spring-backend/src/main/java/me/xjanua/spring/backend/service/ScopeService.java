@@ -35,15 +35,19 @@ public class ScopeService {
 
     public Scope findByCode(String code) {
         return scopeRepository.findByCode(code)
-                .orElseThrow(() -> new NotFoundException("Scope not found with code: " + code));
+                .orElseThrow(() -> new NotFoundException("Scope not found: " + code));
+    }
+
+    public List<Scope> findByIds(List<UUID> ids) {
+        return scopeRepository.findAllById(ids);
     }
 
     public List<Scope> findByCodes(List<String> codes) {
         return scopeRepository.findByCodeIn(codes);
     }
 
-    public List<Scope> findByClientAppId(UUID clientAppId) {
-        return scopeRepository.findByClientAppId(clientAppId);
+    public List<Scope> findAll() {
+        return scopeRepository.findAll();
     }
 
     public Scope save(Scope scope) {
@@ -69,7 +73,7 @@ public class ScopeService {
     @Transactional
     public Scope create(ScopeRequest request) {
         if (scopeRepository.findByCode(request.getCode()).isPresent()) {
-            throw new BadRequestException("Scope code already exists: " + request.getCode());
+            throw new BadRequestException("Scope with this code already exists");
         }
 
         Scope scope = Scope.builder()
@@ -85,14 +89,20 @@ public class ScopeService {
     public Scope update(UUID id, ScopeRequest request) {
         Scope scope = findById(id);
 
-        if (!scope.getCode().equals(request.getCode())
-                && scopeRepository.findByCode(request.getCode()).isPresent()) {
-            throw new BadRequestException("Scope code already exists: " + request.getCode());
+        if (request.getCode() != null && !request.getCode().equals(scope.getCode())) {
+            if (scopeRepository.findByCode(request.getCode()).isPresent()) {
+                throw new BadRequestException("Scope with this code already exists");
+            }
+            scope.setCode(request.getCode());
         }
 
-        scope.setCode(request.getCode());
-        scope.setDescription(request.getDescription());
-        scope.setIsDefault(request.getIsDefault());
+        if (request.getDescription() != null) {
+            scope.setDescription(request.getDescription());
+        }
+
+        if (request.getIsDefault() != null) {
+            scope.setIsDefault(request.getIsDefault());
+        }
 
         return save(scope);
     }
