@@ -17,6 +17,9 @@ public class SecurityConfiguration {
 
     public static final String[] PUBLIC_URLS = {
             "/auth/**",
+            "/oauth/authorize",
+            "/oauth/login",
+            "/oauth/token",
             "/swagger-ui/**",
             "/v3/api-docs/**"
     };

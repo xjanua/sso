@@ -1,22 +1,23 @@
-import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
-import { AuthLayout } from '@/components/layout';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LoginPage from '@/pages/LoginPage';
-
-function AuthLayoutWrapper() {
-  return (
-    <AuthLayout title="SSO Portal" description="Sign in to continue">
-      <Outlet />
-    </AuthLayout>
-  );
-}
+import OAuthLoginPage from '@/pages/OAuthLoginPage';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<AuthLayoutWrapper />}>
-          <Route path="/login" element={<LoginPage />} />
-        </Route>
+        {/* SSO Login - User đăng nhập vào hệ thống */}
+        <Route path="/login" element={<LoginPage />} />
+
+        {/* OAuth Authorization - Client redirect */}
+        <Route
+          path="/oauth/authorize"
+          element={
+            <OAuthLoginPage
+              ssoName="SSO Portal"
+            />
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
