@@ -38,7 +38,7 @@ public class UserDetailsCustomService implements UserDetailsService {
         List<SimpleGrantedAuthority> authorities = getAuthorities(user);
 
         return new UserDetailsCustom(
-                user.getId(),
+                user,
                 user.getUsername(),
                 user.getPassword(),
                 enabled,

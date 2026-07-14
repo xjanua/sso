@@ -7,11 +7,12 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import lombok.RequiredArgsConstructor;
+import me.xjanua.spring.backend.model.User;
 
 @RequiredArgsConstructor
 public class UserDetailsCustom implements UserDetails {
 
-    private final UUID id;
+    private final User user;
     private final String username;
     private final String password;
     private final boolean enabled;
@@ -20,8 +21,12 @@ public class UserDetailsCustom implements UserDetails {
     private final boolean credentialsNonExpired;
     private final Collection<? extends GrantedAuthority> authorities;
 
-    public UUID getId() {
-        return id;
+    public User getUser() {
+        return user;
+    }
+
+    public UUID getUserId() {
+        return user.getId();
     }
 
     @Override
