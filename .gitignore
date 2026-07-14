@@ -3,6 +3,9 @@ spring-backend/.gradle
 spring-backend/build/
 spring-backend/bin/
 
+# Local SSO client demo
+client-fullstack/
+
 # IDE
 .idea/
 *.iml
