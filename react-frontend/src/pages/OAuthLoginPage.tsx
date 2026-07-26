@@ -9,6 +9,14 @@ interface OAuthLoginPageProps {
   ssoName?: string;
 }
 
+interface ConsentState {
+  requestCode: string;
+  scopes: Array<{
+    code: string;
+    description?: string;
+  }>;
+}
+
 export default function OAuthLoginPage({
   ssoName = 'SSO Portal',
 }: OAuthLoginPageProps) {
@@ -18,6 +26,7 @@ export default function OAuthLoginPage({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [consent, setConsent] = useState<ConsentState>();
   const [isValidating, setIsValidating] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -64,9 +73,39 @@ export default function OAuthLoginPage({
         clientId,
         redirectUri,
       });
-      window.location.assign(response.redirectUrl);
+
+      if (response.status === 'AUTHORIZED' && response.redirectUrl) {
+        window.location.assign(response.redirectUrl);
+        return;
+      }
+
+      if (response.status === 'CONSENT_REQUIRED' && response.consentRequestCode) {
+        setConsent({
+          requestCode: response.consentRequestCode,
+          scopes: response.scopes ?? [],
+        });
+        return;
+      }
+
+      setError('Phản hồi đăng nhập SSO không hợp lệ');
     } catch {
       setError('Email hoặc mật khẩu không chính xác');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleConsent = async (approved: boolean) => {
+    if (!consent) return;
+
+    setError('');
+    setIsLoading(true);
+
+    try {
+      const response = await oAuthService.submitConsent(consent.requestCode, approved);
+      window.location.assign(response.redirectUrl);
+    } catch {
+      setError('Không thể xử lý yêu cầu cấp quyền');
     } finally {
       setIsLoading(false);
     }
@@ -113,10 +152,10 @@ export default function OAuthLoginPage({
         {/* Sign in message */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">
-            Sign in to {clientName}
+            {consent ? `${clientName} muốn truy cập tài khoản` : `Sign in to ${clientName}`}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            to continue to {ssoName}
+            {consent ? 'Xem và xác nhận các quyền bên dưới' : `to continue to ${ssoName}`}
           </p>
         </div>
 
@@ -128,6 +167,42 @@ export default function OAuthLoginPage({
             </Alert>
           )}
 
+          {consent ? (
+            <div className="space-y-5">
+              <div className="space-y-3">
+                {consent.scopes.length > 0 ? consent.scopes.map((scope) => (
+                  <div key={scope.code} className="rounded-xl border border-gray-200 bg-white p-4">
+                    <p className="text-sm font-semibold text-gray-900">{scope.code}</p>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {scope.description || `Cho phép truy cập phạm vi ${scope.code}`}
+                    </p>
+                  </div>
+                )) : (
+                  <p className="text-sm text-gray-500">Ứng dụng không yêu cầu thêm thông tin.</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isLoading}
+                  onClick={() => handleConsent(false)}
+                  className="h-12 rounded-xl"
+                >
+                  Hủy
+                </Button>
+                <Button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={() => handleConsent(true)}
+                  className="h-12 rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  {isLoading ? 'Đang xử lý...' : 'Đồng ý'}
+                </Button>
+              </div>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <label 
@@ -190,6 +265,7 @@ export default function OAuthLoginPage({
               ) : 'Sign in'}
             </Button>
           </form>
+          )}
         </div>
 
         {/* Terms */}

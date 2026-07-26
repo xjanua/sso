@@ -1,0 +1,12 @@
+package me.xjanua.spring.backend.dto.oauth;
+
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+@Builder
+public class ConsentResponse {
+    private String redirectUrl;
+}

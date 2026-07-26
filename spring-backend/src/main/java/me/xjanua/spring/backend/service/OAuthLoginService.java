@@ -1,33 +1,34 @@
 package me.xjanua.spring.backend.service;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import lombok.RequiredArgsConstructor;
 import me.xjanua.spring.backend.dto.UserDetailsCustom;
 import me.xjanua.spring.backend.dto.auth.AuthenticationRequest;
+import me.xjanua.spring.backend.dto.oauth.ConsentClientResponse;
+import me.xjanua.spring.backend.dto.oauth.ConsentScopeResponse;
 import me.xjanua.spring.backend.dto.oauth.OAuthLoginRequest;
 import me.xjanua.spring.backend.dto.oauth.OAuthLoginResponse;
-import me.xjanua.spring.backend.model.AuthorizationCode;
+import me.xjanua.spring.backend.enums.OAuthLoginStatus;
+import me.xjanua.spring.backend.model.AuthorizationRequest;
 import me.xjanua.spring.backend.model.ClientApp;
+import me.xjanua.spring.backend.model.ClientAppScope;
 import me.xjanua.spring.backend.model.User;
-import me.xjanua.spring.backend.repository.AuthorizationCodeRepository;
 
 @Service
 @RequiredArgsConstructor
 public class OAuthLoginService {
 
-    private static final long AUTHORIZATION_CODE_VALIDITY_MINUTES = 5;
-
     private final AuthService authService;
     private final OAuthAuthorizationService oauthAuthorizationService;
     private final ClientAppScopeService clientAppScopeService;
-    private final AuthorizationCodeRepository authorizationCodeRepository;
+    private final UserConsentService userConsentService;
+    private final AuthorizationRequestService authorizationRequestService;
+    private final AuthorizationCodeService authorizationCodeService;
 
     @Transactional
     public OAuthLoginResponse login(OAuthLoginRequest request) {
@@ -42,44 +43,53 @@ public class OAuthLoginService {
 
         UserDetailsCustom userDetails = authService.authenticate(authRequest);
         User user = userDetails.getUser();
+        List<ClientAppScope> clientAppScopes = clientAppScopeService.findByClientAppId(clientApp.getId());
+        String scopes = resolveScopes(clientAppScopes);
 
-        AuthorizationCode authorizationCode = AuthorizationCode.builder()
-                .code(generateAuthorizationCode())
-                .clientApp(clientApp)
-                .user(user)
-                .redirectUri(request.getRedirectUri())
-                .scopes(resolveScopes(clientApp))
-                .expiresAt(LocalDateTime.now().plusMinutes(AUTHORIZATION_CODE_VALIDITY_MINUTES))
-                .isUsed(false)
-                .build();
+        if (userConsentService.hasGrantedScopes(user, clientApp, scopes)) {
+            String redirectUrl = authorizationCodeService.createRedirectUrl(
+                    user,
+                    clientApp,
+                    request.getRedirectUri(),
+                    scopes);
 
-        authorizationCodeRepository.save(authorizationCode);
+            return OAuthLoginResponse.builder()
+                    .status(OAuthLoginStatus.AUTHORIZED.name())
+                    .redirectUrl(redirectUrl)
+                    .build();
+        }
+
+        AuthorizationRequest authorizationRequest = authorizationRequestService.create(
+                user,
+                clientApp,
+                request.getRedirectUri(),
+                scopes);
 
         return OAuthLoginResponse.builder()
-                .redirectUrl(buildRedirectUrl(request.getRedirectUri(), authorizationCode.getCode()))
+                .status(OAuthLoginStatus.CONSENT_REQUIRED.name())
+                .consentRequestCode(authorizationRequest.getRequestCode())
+                .client(ConsentClientResponse.builder()
+                        .name(clientApp.getName())
+                        .logoUrl(clientApp.getLogoUrl())
+                        .build())
+                .scopes(buildScopeResponses(clientAppScopes))
                 .build();
     }
 
-    private String resolveScopes(ClientApp clientApp) {
-        return clientAppScopeService.findByClientAppId(clientApp.getId()).stream()
+    private String resolveScopes(List<ClientAppScope> clientAppScopes) {
+        return clientAppScopes.stream()
                 .map(clientAppScope -> clientAppScope.getScope().getCode())
                 .sorted()
                 .collect(Collectors.joining(","));
     }
 
-    private String generateAuthorizationCode() {
-        String code;
-        do {
-            code = UUID.randomUUID().toString().replace("-", "");
-        } while (authorizationCodeRepository.existsByCode(code));
-        return code;
-    }
-
-    private String buildRedirectUrl(String redirectUri, String code) {
-        return UriComponentsBuilder.fromUriString(redirectUri)
-                .queryParam("code", code)
-                .build()
-                .encode()
-                .toUriString();
+    private List<ConsentScopeResponse> buildScopeResponses(List<ClientAppScope> clientAppScopes) {
+        return clientAppScopes.stream()
+                .map(clientAppScope -> ConsentScopeResponse.builder()
+                        .code(clientAppScope.getScope().getCode())
+                        .description(clientAppScope.getScope().getDescription())
+                        .build())
+                .sorted((first, second) -> first.getCode().compareTo(second.getCode()))
+                .toList();
     }
 }
