@@ -19,6 +19,7 @@ public class SecurityConfiguration {
             "/auth/**",
             "/oauth/authorize",
             "/oauth/login",
+            "/oauth/consent",
             "/oauth/token",
             "/swagger-ui/**",
             "/v3/api-docs/**"

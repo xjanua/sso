@@ -35,9 +35,32 @@ export const oAuthService = {
     const response = await api.post<{
       success: boolean;
       data: {
-        redirectUrl: string;
+        status: 'AUTHORIZED' | 'CONSENT_REQUIRED';
+        redirectUrl?: string;
+        consentRequestCode?: string;
+        client?: {
+          name: string;
+          logoUrl?: string;
+        };
+        scopes?: Array<{
+          code: string;
+          description?: string;
+        }>;
       };
     }>('/oauth/login', data);
+    return response.data.data;
+  },
+
+  submitConsent: async (consentRequestCode: string, approved: boolean) => {
+    const response = await api.post<{
+      success: boolean;
+      data: {
+        redirectUrl: string;
+      };
+    }>('/oauth/consent', {
+      consentRequestCode,
+      approved,
+    });
     return response.data.data;
   },
 
